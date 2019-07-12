@@ -5,7 +5,7 @@ import psycopg2
 DBNAME = 'news'
 QUESTIONS = {
     "Top 3 Articles": '''
-    select title, count(1) "views"
+    select title, count(1) || ' views' as "views"
     from log, articles
     where '/article/' || articles.slug = log.path
       and status = '200 OK'
@@ -13,8 +13,8 @@ QUESTIONS = {
     order by "views" desc
     limit 3;
     ''',
-    "Most Popular Authors":'''
-    select name, count(1) "views"
+    "Most Popular Authors": '''
+    select name, count(1) || ' views' as "views"
     from log, articles, authors
     where '/article/' || articles.slug = log.path
       and articles.author = authors.id
@@ -23,7 +23,10 @@ QUESTIONS = {
     order by "views" desc;
     ''',
     "Days w/ Page Errors > 1%": '''
-    select date(time) "day", round(avg(case when status = '200 OK' then 0 else 1 end)*100, 2) "erros_percent"
+    select date(time) "day", round(avg(case
+                                        when status = '200 OK' then 0
+                                         else 1
+                                        end)*100, 2) as "erros_percent"
     from log
     group by "day"
     having avg(case when status = '200 OK' then 0 else 1 end) > 0.01 ;
@@ -38,7 +41,7 @@ def query(sql, params=''):
             curs.execute(sql, params)
             return curs.fetchall()
     except e:
-        print('Unable to connect')
+        print('Something goes wrong')
         raise e
     finally:
         conn.close()
@@ -55,6 +58,7 @@ def report():
             print(' | '.join([str(value) for value in row]))
 
         print()
+
 
 if __name__ == "__main__":
     report()
